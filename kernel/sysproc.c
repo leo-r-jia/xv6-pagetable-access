@@ -7,6 +7,7 @@
 #include "spinlock.h"
 #include "proc.h"
 
+
 uint64
 sys_exit(void)
 {
@@ -94,4 +95,38 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_pageAccess(void)
+{
+  // Get the three function arguments from the pageAccess() system call
+  uint64 usrpage_ptr;  // First argument - pointer to user space address
+  int npages;          // Second argument - the number of pages to examine
+  uint64 usraddr;      // Third argument - pointer to the bitmap
+
+  argaddr(0, &usrpage_ptr);
+  argint(1, &npages);
+  argaddr(2, &usraddr);
+
+  struct proc* p = myproc();
+
+  pte_t * pte;
+  int bitmap = 0;
+
+  for(int i=0; i<npages;i++) {
+    pte = walk(p->pagetable, usrpage_ptr, 0);
+    if(*pte & PTE_A) {
+      *pte &= ~(PTE_A);
+      bitmap |= (1 << i);
+    }
+    usrpage_ptr += PGSIZE;
+  }
+
+  if(copyout(p->pagetable, usraddr, (char*)&bitmap, sizeof(bitmap))<0) {
+    return -1;
+  }
+  // Return the bitmap pointer to the user program
+  copyout(p->pagetable, usraddr, (char*)&bitmap, sizeof(bitmap));
+  return 0;
 }

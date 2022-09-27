@@ -23,6 +23,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int pageAccess(char *buf, unsigned int npages, unsigned int* bitmap);
 
 // ulib.c
 int stat(const char*, struct stat*);
